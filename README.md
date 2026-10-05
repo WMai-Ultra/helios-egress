@@ -1,6 +1,8 @@
-# 终端设备网络出口与链路遥测平台
+# HELIOS · 终端设备网络出口与链路遥测平台
 
-**Terminal Device Network Egress & Link Telemetry Platform**
+**HELIOS — High-fidelity Egress Link Integrity & Observability Suite**
+
+> 终端设备网络出口与链路遥测平台 · Terminal Device Network Egress & Link Telemetry Platform
 
 一套以**终端设备网络地址**作为业务出口、以**任播边缘网络**作为接入面、并对"客户端 → 边缘 → 隧道 → 出口节点 → 目标"全链路做**分段实测遥测**的轻量级出口平台。
 
