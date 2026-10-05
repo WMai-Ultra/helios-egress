@@ -3360,7 +3360,7 @@ rules:
                 <div class="sub-line">
                   <span>接入设备 <b id="hdrDevice" style="color:var(--md-sys-color-on-surface);">--</b></span>
                   <span>接入网络 <b id="hdrWifi" style="color:var(--md-sys-color-on-surface);">--</b></span>
-                  <span>出口 节点所在地 · 出口节点住宅网络</span>
+                  <span>出口 节点所在地 · 出口节点终端设备网络</span>
                 </div>
               </div>
               <div class="header-meta" style="display:flex;align-items:center;gap:10px;">
@@ -3453,7 +3453,7 @@ rules:
                 </div>
                 <div class="pipe-node" data-step="⑤">
                   <div class="pipe-label">EGRESS ISP</div>
-                  <div class="pipe-title">住宅宽带原生出口</div>
+                  <div class="pipe-title">原生终端设备出口</div>
                   <div class="pipe-desc">5 个入站分流区(R2 行)</div>
                   <div class="pipe-tag egress" id="pipeEgressTag">IPv4 出站</div>
                 </div>

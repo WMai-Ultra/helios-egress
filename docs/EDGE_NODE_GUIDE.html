@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>住宅宽带出口节点 · 完整搭建与运维教程（客户端 / 节点侧）</title>
+<title>终端设备网络出口节点 · 完整搭建与运维教程（客户端 / 节点侧）</title>
 <style>
   :root{
     --bg:#0b0d10; --panel:#12151a; --panel-2:#171b21; --line:#232833;
@@ -120,7 +120,7 @@
 
 <header class="hero">
   <div class="kicker">Field Manual · 从零到可运维</div>
-  <h1>住宅宽带出口节点 · 完整搭建与运维教程</h1>
+  <h1>终端设备网络出口节点 · 完整搭建与运维教程</h1>
   <p>核心只有一句话：<b>一台出口节点，就可以当作出口。</b>出口节点装两个程序——一个接住流量、一个把回程隧道打通；你在终端上的代理软件里填好配置、连上它，流量就从这台出口节点所在的网络出去。<b>不需要服务器，不需要公网 IP，不需要端口映射。</b>全文分<b>客户端</b>与<b>节点侧</b>两侧，每一步都说明<b>要做什么</b>和<b>这一步到底在解决什么问题</b>。</p>
   <div class="meta">
     <span class="chip">客户端：订阅 · 导入 · 优选</span>
@@ -160,9 +160,9 @@
   <h2><span class="no">01</span>这套系统到底是什么</h2>
   <p class="lead">先用一句话说清楚它的价值，后面所有设计取舍都是从这句话推导出来的。</p>
 
-  <p><b>它把一台放在海外家里的出口节点，变成一条可以被远端客户端使用的、出口地址 属于当地住宅宽带的网络通道。</b></p>
+  <p><b>它把一台放在海外家里的出口节点，变成一条可以被远端客户端使用的、出口地址 属于当地终端设备网络的网络通道。</b></p>
 
-  <p>为什么这件事有价值？因为互联网上大量服务会对「来源 IP 的类型」区别对待：边缘接入点 IP（云服务器）容易被风控、被限流、被判定为数据中心流量；而住宅宽带 IP 在各类风控模型里天然更"干净"。传统的边缘接入点代理做不到这一点，因为它的出口就是数据中心。</p>
+  <p>为什么这件事有价值？因为互联网上大量服务会对「来源 IP 的类型」区别对待：边缘接入点 IP（云服务器）容易被风控、被限流、被判定为数据中心流量；而终端设备网络 IP 在各类风控模型里天然更"干净"。传统的边缘接入点代理做不到这一点，因为它的出口就是数据中心。</p>
 
   <p>所以整套系统的技术目标非常明确：<b>让客户端的流量，最终从一个真实的家庭宽带的公网 IP 出去。</b>围绕这个目标，才衍生出后面所有的设计：</p>
 
@@ -170,10 +170,10 @@
   <table>
     <thead><tr><th>目标</th><th>由此产生的要求</th></tr></thead>
     <tbody>
-      <tr><td>出口必须是住宅 IP</td><td>不能买云服务器做出入口，必须有一台真实接入家庭宽带的设备常驻运行</td></tr>
+      <tr><td>出口必须是终端设备 IP</td><td>不能买云服务器做出入口，必须有一台真实接入家庭宽带的设备常驻运行</td></tr>
       <tr><td>设备在别人家里，无人值守</td><td>必须能自愈、能远程诊断、能远程重启，不能靠"去现场重启一下"</td></tr>
       <tr><td>客户端在国内，直连海外会被干扰</td><td>必须借一层全球任播网络（Cloudflare）做前置，并把流量伪装成正常的 HTTPS 访问</td></tr>
-      <tr><td>住宅上行链路带宽有限、要省电</td><td>所有探测/心跳频率必须精打细算，能合并的上报必须合并</td></tr>
+      <tr><td>终端设备上行链路带宽有限、要省电</td><td>所有探测/心跳频率必须精打细算，能合并的上报必须合并</td></tr>
       <tr><td>运维要能看见"此刻到底通不可达"</td><td>必须有一块能实时反映链路每个环节的监控面板</td></tr>
       <tr><td>数据不能造假</td><td>测不到就显示"未测到"，宁可留空也不填数字</td></tr>
     </tbody>
@@ -181,7 +181,7 @@
   </div>
 
   <div class="note ok">
-    <b>本教程的边界：</b>只讲<b>客户端</b>（拿订阅、导入、可达、调优）和<b>服务端</b>（边缘 Worker、住宅出口节点、采集脚本、监控运营监控台）。
+    <b>本教程的边界：</b>只讲<b>客户端</b>（拿订阅、导入、可达、调优）和<b>服务端</b>（边缘 Worker、终端设备节点、采集脚本、监控运营监控台）。
     把它当作一条<b>工程链路</b>来拆解——每一层的职责、参数的含义、失败时怎么判断。
   </div>
 </section>
@@ -223,9 +223,9 @@
       <text x="362" y="230" fill="#cfe0ff" font-size="11.5" text-anchor="middle" font-family="monospace">Argo 智能路由</text>
       <text x="362" y="249" fill="#6f7889" font-size="10.5" text-anchor="middle">出站隧道（免开端口）</text>
 
-      <!-- 住宅出口节点 -->
+      <!-- 终端设备节点 -->
       <rect x="548" y="86" width="204" height="196" rx="10" fill="#171a12" stroke="#4a4426"/>
-      <text x="650" y="114" fill="#e6e9ef" font-size="14" font-weight="700" text-anchor="middle">住宅出口节点（服务端）</text>
+      <text x="650" y="114" fill="#e6e9ef" font-size="14" font-weight="700" text-anchor="middle">终端设备节点（服务端）</text>
       <text x="650" y="134" fill="#a8b0bf" font-size="11.5" text-anchor="middle">常驻出口节点 / 小主机</text>
       <rect x="566" y="148" width="168" height="40" rx="7" fill="#0f1310" stroke="#2a3648"/>
       <text x="650" y="173" fill="#cfe0ff" font-size="11.5" text-anchor="middle" font-family="monospace">Xray（入站 + 出站）</text>
@@ -237,7 +237,7 @@
       <rect x="830" y="120" width="146" height="128" rx="10" fill="#101418" stroke="#2a3648"/>
       <text x="903" y="152" fill="#e6e9ef" font-size="14" font-weight="700" text-anchor="middle">公网</text>
       <text x="903" y="176" fill="#a8b0bf" font-size="11.5" text-anchor="middle">目标网站</text>
-      <text x="903" y="200" fill="#4ade80" font-size="11.5" text-anchor="middle" font-family="monospace">出口 = 住宅宽带 IP</text>
+      <text x="903" y="200" fill="#4ade80" font-size="11.5" text-anchor="middle" font-family="monospace">出口 = 终端设备网络 IP</text>
       <text x="903" y="224" fill="#6f7889" font-size="10.5" text-anchor="middle">这是整条链路的产物</text>
 
       <!-- 流量箭头 -->
@@ -265,8 +265,8 @@
       <ul>
         <li>客户端把流量封装成<b>看起来像访问某个域名的 HTTPS</b></li>
         <li>Cloudflare 任播把请求落到<b>离客户端最近的边缘边缘接入点</b></li>
-        <li>边缘通过<b>已建立的反向隧道</b>把流量送回住宅出口节点</li>
-        <li>住宅出口节点的代理核心解密后，用<b>家庭宽带的公网 IP</b> 访问目标</li>
+        <li>边缘通过<b>已建立的反向隧道</b>把流量送回终端设备节点</li>
+        <li>终端设备节点的代理核心解密后，用<b>家庭宽带的公网 IP</b> 访问目标</li>
       </ul>
     </div>
     <div class="box sv">
@@ -282,7 +282,7 @@
 
   <div class="note">
     <b>为什么遥测要"节点主动推"而不是"运营监控台去拉"？</b>
-    因为住宅出口节点在 NAT 后面，没有公网入口，外部无法主动连它；而它主动出去的连接是通的。整条链路能成立，靠的就是这个方向性——所有的"远程控制"都必须搭在"节点主动上报"这趟车上（见 <a href="#c10" style="color:var(--accent)">第 10 章 指令通道</a>）。
+    因为终端设备节点在 NAT 后面，没有公网入口，外部无法主动连它；而它主动出去的连接是通的。整条链路能成立，靠的就是这个方向性——所有的"远程控制"都必须搭在"节点主动上报"这趟车上（见 <a href="#c10" style="color:var(--accent)">第 10 章 指令通道</a>）。
   </div>
 
   <h3>角色与职责速查</h3>
@@ -303,7 +303,7 @@
         <td>大面积不可用（系统级故障）</td>
       </tr>
       <tr>
-        <td><b>住宅出口节点</b><br><span class="tag">服务端</span></td>
+        <td><b>终端设备节点</b><br><span class="tag">服务端</span></td>
         <td>代理核心、隧道客户端、全部采集脚本</td>
         <td>不主动向外发起控制类请求</td>
         <td>全员断网 + 运营监控台数据停止更新（最关键的单点）</td>
@@ -332,7 +332,7 @@
         <!-- 节点 -->
         <g>
           <rect x="18" y="70" width="142" height="110" rx="9" fill="#111722" stroke="#33507d"/>
-          <text x="89" y="94" fill="#7c9cff" font-size="12" font-weight="700" text-anchor="middle">① 准备住宅出口节点</text>
+          <text x="89" y="94" fill="#7c9cff" font-size="12" font-weight="700" text-anchor="middle">① 准备终端设备节点</text>
           <text x="89" y="118" fill="#a8b0bf" font-size="10.5" text-anchor="middle">常驻设备</text>
           <text x="89" y="136" fill="#a8b0bf" font-size="10.5" text-anchor="middle">固定内网地址</text>
           <text x="89" y="154" fill="#a8b0bf" font-size="10.5" text-anchor="middle">关省电策略</text>
@@ -387,13 +387,13 @@
           <line x1="800" y1="125" x2="816" y2="125" marker-end="url(#ar)"/>
         </g>
         <text x="500" y="36" fill="#6f7889" font-size="11" text-anchor="middle">顺序不能颠倒：后一步都依赖前一步已经能跑</text>
-        <text x="500" y="214" fill="#a8b0bf" font-size="11" text-anchor="middle">① ② ③ 在住宅出口节点上完成 · ④ 在 Cloudflare 上完成 · ⑤ 回到节点 · ⑥ 日常运维</text>
+        <text x="500" y="214" fill="#a8b0bf" font-size="11" text-anchor="middle">① ② ③ 在终端设备节点上完成 · ④ 在 Cloudflare 上完成 · ⑤ 回到节点 · ⑥ 日常运维</text>
       </g>
     </svg>
     <figcaption>图 2 · 六步搭建顺序。前三步解决"这条链路能不能成立"，后三步解决"能不能被分发、被看见、被管理"。</figcaption>
   </figure>
 
-  <h3>步骤 ① 准备住宅出口节点</h3>
+  <h3>步骤 ① 准备终端设备节点</h3>
   <ol class="steps">
     <li>选一台<b>长期通电、接入家庭宽带</b>的设备（旧出口节点 / 迷你主机 / 软路由都行），确认它的公网出口就是家庭宽带 IP。
       <span class="why"><b>为什么：</b>出口地址 的归属由这一台设备决定，选错设备后面全白做。可以用一条命令验证：<code>curl -s https://www.cloudflare.com/cdn-cgi/trace</code> 看返回里的 <code>loc</code> 与 <code>ip</code> 字段，确认地理位置与运营商归属符合预期。</span>
@@ -402,7 +402,7 @@
       <span class="why"><b>为什么：</b>所有采集脚本、隧道配置、远程诊断命令都写死了内网地址；地址一变，隧道断开、脚本失联，而你人不在现场。</span>
     </li>
     <li>关掉会"杀掉后台进程"的系统策略：省电模式、后台限制、自动清理内存。
-      <span class="why"><b>为什么：</b>这套东西要靠常驻进程活着。系统一睡，隧道就断——表现就是"所有人同时上不了网，运营监控台数据也冻结"。这是住宅出口节点方案最高频的故障源。</span>
+      <span class="why"><b>为什么：</b>这套东西要靠常驻进程活着。系统一睡，隧道就断——表现就是"所有人同时上不了网，运营监控台数据也冻结"。这是终端设备节点方案最高频的故障源。</span>
     </li>
     <li>准备一个可以远程操作它的通道（同网段的跳板机 / 局域网的 SSH / 调试桥）。
       <span class="why"><b>为什么：</b>节点在别人家里。没有远程通道，任何"改一个参数"都要变成"上门一次"。</span>
@@ -416,7 +416,7 @@
     <thead><tr><th>配置块</th><th>作用</th><th>要点</th></tr></thead>
     <tbody>
       <tr><td><code>inbounds</code> 入站</td><td>接收隧道送来的流量</td><td>监听本机端口，协议与客户端一致；按路径拆分成多个入口（见第 4 章）</td></tr>
-      <tr><td><code>outbounds</code> 出站</td><td>把流量发往目标</td><td>默认 <code>freedom</code> 直连——<b>这一条决定了"出口是住宅 IP"</b></td></tr>
+      <tr><td><code>outbounds</code> 出站</td><td>把流量发往目标</td><td>默认 <code>freedom</code> 直连——<b>这一条决定了"出口是终端设备 IP"</b></td></tr>
       <tr><td><code>stats</code> / <code>api</code> 统计</td><td>让采集脚本能读到实时流量</td><td>开一个只监听 <code>127.0.0.1</code> 的统计端口；<b>绝不能暴露到公网</b></td></tr>
       <tr><td><code>log</code> 日志</td><td>审计与排错</td><td>必须开访问日志——流量统计与访问域名统计都是从日志里解析出来的</td></tr>
     </tbody>
@@ -572,7 +572,7 @@
         <rect x="506" y="52" width="196" height="88" rx="9" fill="#111722" stroke="#33507d"/>
         <text x="604" y="78" fill="#7c9cff" font-size="12" font-weight="700" text-anchor="middle">③ 验证可达</text>
         <text x="604" y="102" fill="#a8b0bf" font-size="10.5" text-anchor="middle">看出口地址 / 归属地</text>
-        <text x="604" y="122" fill="#6f7889" font-size="10" text-anchor="middle">确认"真的是住宅出口"</text>
+        <text x="604" y="122" fill="#6f7889" font-size="10" text-anchor="middle">确认"真的是终端设备出口"</text>
 
         <rect x="744" y="52" width="196" height="88" rx="9" fill="#171a12" stroke="#4a4426"/>
         <text x="842" y="78" fill="#4ade80" font-size="12" font-weight="700" text-anchor="middle">④ 调优</text>
@@ -627,7 +627,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
       <span class="why"><b>看什么：</b>返回里的 <code>ip</code> 与 <code>loc</code>。如果 <code>loc</code> 是你预期的国家/地区，说明链路成立。</span>
     </li>
     <li>把这个 <code>ip</code> 拿去查一下归属类型。
-      <span class="why"><b>为什么要查：</b>这一步才是"验证产品价值"——确认出口是<b>宽带/住宅</b>而不是边缘接入点。如果显示为数据中心，说明流量没走预期出口。</span>
+      <span class="why"><b>为什么要查：</b>这一步才是"验证产品价值"——确认出口是<b>宽带/终端设备</b>而不是边缘接入点。如果显示为数据中心，说明流量没走预期出口。</span>
     </li>
     <li>如果全部节点都超时，先怀疑客户端指纹参数；如果只有个别节点超时，换一个节点。
       <span class="why"><b>判断依据：</b>"全挂"通常是配置层问题（见第 4 章 4.2），"个别挂"通常是那条路径的优选 IP 失效。</span>
@@ -648,7 +648,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
       <h4>为什么不要全局</h4>
       <ul>
         <li>全局会把所有流量压到一条家庭宽带上</li>
-        <li>住宅上行链路带宽有限，容易互相拖慢</li>
+        <li>终端设备上行链路带宽有限，容易互相拖慢</li>
         <li>节点侧流量统计也会被无关流量淹没</li>
       </ul>
     </div>
@@ -690,7 +690,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
         <text x="715" y="134" fill="#6f7889" font-size="10" text-anchor="middle">任一地址都能到达</text>
 
         <rect x="842" y="88" width="130" height="64" rx="9" fill="#171a12" stroke="#4a4426"/>
-        <text x="907" y="114" fill="#e6e9ef" font-size="12" text-anchor="middle">住宅出口节点</text>
+        <text x="907" y="114" fill="#e6e9ef" font-size="12" text-anchor="middle">终端设备节点</text>
         <text x="907" y="134" fill="#6f7889" font-size="10" text-anchor="middle">出口唯一</text>
 
         <g stroke="#2a3648" stroke-width="1.5">
@@ -703,7 +703,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
           <line x1="790" y1="120" x2="838" y2="120" marker-end="url(#ar)"/>
         </g>
         <text x="500" y="236" fill="#a8b0bf" font-size="11" text-anchor="middle">
-          出口永远只有一条（住宅出口节点），能优化的只是"第一跳"：选哪个接入地址进去
+          出口永远只有一条（终端设备节点），能优化的只是"第一跳"：选哪个接入地址进去
         </text>
       </g>
     </svg>
@@ -794,7 +794,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
       <g font-family="monospace" font-size="11">
         <!-- 节点侧 -->
         <rect x="24" y="40" width="200" height="252" rx="10" fill="#12160f" stroke="#4a4426"/>
-        <text x="124" y="64" fill="#e6e9ef" font-size="12" font-weight="700" text-anchor="middle">住宅出口节点（采集侧）</text>
+        <text x="124" y="64" fill="#e6e9ef" font-size="12" font-weight="700" text-anchor="middle">终端设备节点（采集侧）</text>
 
         <rect x="40" y="80" width="168" height="40" rx="7" fill="#0f1310" stroke="#2a3648"/>
         <text x="124" y="98" fill="#cfe0ff" font-size="10.5" text-anchor="middle">① 遥测上报</text>
@@ -934,7 +934,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
         <line x1="150" y1="46" x2="150" y2="272" stroke="#232833"/>
         <line x1="470" y1="46" x2="470" y2="272" stroke="#232833"/>
         <line x1="800" y1="46" x2="800" y2="272" stroke="#232833"/>
-        <text x="150" y="34" fill="#e6e9ef" font-size="11.5" font-weight="700" text-anchor="middle">住宅出口节点</text>
+        <text x="150" y="34" fill="#e6e9ef" font-size="11.5" font-weight="700" text-anchor="middle">终端设备节点</text>
         <text x="470" y="34" fill="#e6e9ef" font-size="11.5" font-weight="700" text-anchor="middle">边缘 Worker</text>
         <text x="800" y="34" fill="#e6e9ef" font-size="11.5" font-weight="700" text-anchor="middle">浏览器运营监控台</text>
 
@@ -1084,7 +1084,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
         <text x="340" y="80" fill="#6f7889" font-size="10" text-anchor="middle">写"待执行指令"（单个键）</text>
 
         <rect x="500" y="40" width="180" height="52" rx="9" fill="#171a12" stroke="#4a4426"/>
-        <text x="590" y="62" fill="#e6e9ef" font-size="11.5" text-anchor="middle">住宅出口节点</text>
+        <text x="590" y="62" fill="#e6e9ef" font-size="11.5" text-anchor="middle">终端设备节点</text>
         <text x="590" y="80" fill="#6f7889" font-size="10" text-anchor="middle">下一轮上报时取走</text>
 
         <rect x="750" y="40" width="200" height="52" rx="9" fill="#141b26" stroke="#33507d"/>
@@ -1113,7 +1113,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
 
   <h3>10.4 为什么"节点主动汇报"这件事本身就是设计</h3>
   <ul>
-    <li><b>不引入入站端口</b>：住宅网络普遍没有公网入口，任何"服务端主动连节点"的方案都需要端口映射或额外穿透。</li>
+    <li><b>不引入入站端口</b>：终端设备网络普遍没有公网入口，任何"服务端主动连节点"的方案都需要端口映射或额外穿透。</li>
     <li><b>不需要公网 IP 与 DDNS</b>：节点每次主动连出，边缘记住连接，地址变化无影响。</li>
     <li><b>天然抗扫描</b>：外界扫不到任何管理端口。</li>
     <li><b>代价是"延迟下发"</b>：所有远程操作最长要等一个上报周期。设计上必须接受这个延迟，并把"指令是否被取走/执行"显式展示出来。</li>
@@ -1166,7 +1166,7 @@ https://&lt;你的入口域名&gt;/sub?token=&lt;你的专属令牌&gt;&amp;type
 <section id="c12">
   <span class="anchor" id="c12a"></span>
   <h2><span class="no">12</span>排错手册（按现象查）</h2>
-  <p class="lead">排错的本质是"二分"：先确定问题在客户端、边缘，还是住宅出口节点，再往下切。下表按<b>你眼睛看到的现象</b>组织。</p>
+  <p class="lead">排错的本质是"二分"：先确定问题在客户端、边缘，还是终端设备节点，再往下切。下表按<b>你眼睛看到的现象</b>组织。</p>
 
   <h3>12.1 客户端现象</h3>
   <div class="tablewrap">
@@ -1307,7 +1307,7 @@ curl -s -o /dev/null -w "%{http_code}\n" "https://&lt;入口域名&gt;/admin?pwd
 grep -o "const BUILD_ID = '[^']*'" worker_deploy.js
 curl -s "https://&lt;入口域名&gt;/api/live?pwd=&lt;管理口令&gt;&amp;since=" | grep -o '"buildId":"[^"]*"'</code></pre>
 
-  <h3>13.3 服务端 · 住宅出口节点</h3>
+  <h3>13.3 服务端 · 终端设备节点</h3>
   <pre><code># 完整重启（顺序在脚本里已固定，别单独手工杀）
 sh /data/local/tmp/run_daemon.sh
 
@@ -1384,7 +1384,7 @@ tail -5 /data/local/tmp/timing.log</code></pre>
     </div>
     <div class="box sv">
       <h4>② 家庭带宽与电量</h4>
-      <p>所有探测/心跳共享同一条住宅上行链路。<b>能合并的上报必须合并</b>，能降频的必须降频；节点还常是电池设备。</p>
+      <p>所有探测/心跳共享同一条终端设备上行链路。<b>能合并的上报必须合并</b>，能降频的必须降频；节点还常是电池设备。</p>
     </div>
     <div class="box us">
       <h4>③ 分布式一致性</h4>
@@ -1399,7 +1399,7 @@ tail -5 /data/local/tmp/timing.log</code></pre>
   <h3>14.4 一句话总览</h3>
   <div class="note ok">
     <b>客户端</b>只做四件事：拿订阅、导入、验证出口、优选接入点。<br>
-    <b>服务端</b>是三台"机器"的协作：<b>边缘</b>负责分发与聚合，<b>住宅出口节点</b>负责出口与全部测量，<b>运营监控台</b>负责把事实呈现给人。<br>
+    <b>服务端</b>是三台"机器"的协作：<b>边缘</b>负责分发与聚合，<b>终端设备节点</b>负责出口与全部测量，<b>运营监控台</b>负责把事实呈现给人。<br>
     三者之间只有两条通道：<b>节点每几秒一次的主动上报</b>，和<b>浏览器对边缘的长轮询</b>。所有功能——包括远程控制——都建立在这两条通道之上。
   </div>
 </section>
